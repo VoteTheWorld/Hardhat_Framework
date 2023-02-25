@@ -10,6 +10,7 @@ coverage
 coverage.json
 typechain
 
+
 # don't push the environment vars!
 .env
 

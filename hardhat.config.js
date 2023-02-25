@@ -1,76 +1,45 @@
-require("@nomicfoundation/hardhat-toolbox")
-require("./tasks")
+require("@nomiclabs/hardhat-waffle")
+require("@nomiclabs/hardhat-etherscan")
+require("hardhat-deploy")
+require("solidity-coverage")
+require("hardhat-gas-reporter")
+require("hardhat-contract-sizer")
 require("dotenv").config()
 
-const COMPILER_SETTINGS = {
-    optimizer: {
-        enabled: true,
-        runs: 1000000,
-    },
-    metadata: {
-        bytecodeHash: "none",
-    },
-}
-
-const MAINNET_RPC_URL =
-    process.env.MAINNET_RPC_URL ||
-    process.env.ALCHEMY_MAINNET_RPC_URL ||
-    "https://eth-mainnet.alchemyapi.io/v2/your-api-key"
-const POLYGON_MAINNET_RPC_URL =
-    process.env.POLYGON_MAINNET_RPC_URL || "https://polygon-mainnet.alchemyapi.io/v2/your-api-key"
-const SEPOLIA_RPC_URL =
-    process.env.SEPOLIA_RPC_URL;
-const MUMBAI_RPC_URL =
-    process.env.MUMBAI_RPC_URL || "https://polygon-mumbai.g.alchemy.com/v2/your-api-key"
-const PRIVATE_KEY = process.env.PRIVATE_KEY
-// optional
-const MNEMONIC = process.env.MNEMONIC || "Your mnemonic"
-const FORKING_BLOCK_NUMBER = parseInt(process.env.FORKING_BLOCK_NUMBER) || 0
-
-// Your API key for Etherscan, obtain one at https://etherscan.io/
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "Your etherscan API key"
-const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY || "Your polygonscan API key"
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
+const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL
+const POLYGON_MAINNET_RPC_URL = process.env.POLYGON_MAINNET_RPC_URL
+const MUMBAI_RPC_URL = process.env.MUMBAI_RPC_URL
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x"
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
+const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY
 const REPORT_GAS = process.env.REPORT_GAS || false
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY
 
-/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-    solidity: {
-        compilers: [
-            {
-                version: "0.8.7",
-                COMPILER_SETTINGS,
-            },
-            {
-                version: "0.6.6",
-                COMPILER_SETTINGS,
-            },
-            {
-                version: "0.4.24",
-                COMPILER_SETTINGS,
-            },
-        ],
-    },
+    defaultNetwork: "hardhat",
     networks: {
         hardhat: {
-            hardfork: "merge",
-            // If you want to do some forking set `enabled` to true
-            forking: {
-                url: MAINNET_RPC_URL,
-                blockNumber: FORKING_BLOCK_NUMBER,
-                enabled: false,
-            },
+            // // If you want to do some forking, uncomment this
+            // forking: {
+            //   url: MAINNET_RPC_URL
+            // }
             chainId: 31337,
         },
         localhost: {
             chainId: 31337,
         },
-        sepolia: {
-            url: SEPOLIA_RPC_URL !== undefined ? SEPOLIA_RPC_URL : "",
+        goerli: {
+            url: GOERLI_RPC_URL,
             accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
             //   accounts: {
             //     mnemonic: MNEMONIC,
             //   },
-            chainId: 11155111,
+            saveDeployments: true,
+            chainId: 5,
+            blockConfirmations: 6,
+            gas: 2100000,
+            gasPrice: 80000000000,
         },
         mainnet: {
             url: MAINNET_RPC_URL,
@@ -91,13 +60,10 @@ module.exports = {
             chainId: 80001,
         },
     },
-    defaultNetwork: "hardhat",
     etherscan: {
-        // yarn hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
+        // npx hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
         apiKey: {
-            // npx hardhat verify --list-networks
-            sepolia: ETHERSCAN_API_KEY,
-            mainnet: ETHERSCAN_API_KEY,
+            goerli: ETHERSCAN_API_KEY,
             polygon: POLYGONSCAN_API_KEY,
             polygonMumbai: POLYGONSCAN_API_KEY,
         },
@@ -107,26 +73,32 @@ module.exports = {
         currency: "USD",
         outputFile: "gas-report.txt",
         noColors: true,
-        // coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+        coinmarketcap: COINMARKETCAP_API_KEY,
     },
     contractSizer: {
         runOnCompile: false,
-        only: [
-            "APIConsumer",
-            "AutomationCounter",
-            "NFTFloorPriceConsumerV3",
-            "PriceConsumerV3",
-            "RandomNumberConsumerV2",
-            "RandomNumberDirectFundingConsumerV2",
+        only: ["NftMarketplace"],
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0, // here this will by default take the first account as deployer
+            1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+        },
+        player: {
+            default: 1,
+        },
+    },
+    solidity: {
+        compilers: [
+            {
+                version: "0.8.9",
+            },
+            {
+                version: "0.4.24",
+            },
         ],
     },
-    paths: {
-        sources: "./contracts",
-        tests: "./test",
-        cache: "./build/cache",
-        artifacts: "./build/artifacts",
-    },
     mocha: {
-        timeout: 300000, // 300 seconds max for running tests
+        timeout: 200000, // 200 seconds max for running tests
     },
 }
